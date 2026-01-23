@@ -12,6 +12,7 @@ import br.com.jorgefigueredoo.agendamento_barbearia_api.repository.ServiceReposi
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,8 +24,8 @@ public class AgendamentoService {
     private final BarberRepository barberRepository;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
-                              ServiceRepository serviceRepository,
-                              BarberRepository barberRepository) {
+            ServiceRepository serviceRepository,
+            BarberRepository barberRepository) {
         this.agendamentoRepository = agendamentoRepository;
         this.serviceRepository = serviceRepository;
         this.barberRepository = barberRepository;
@@ -45,8 +46,7 @@ public class AgendamentoService {
                 barbeiro.getId(),
                 start,
                 end,
-                List.of(StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO)
-        );
+                List.of(StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO));
 
         if (conflito) {
             throw new RuntimeException("Horário indisponível para esse barbeiro");
@@ -109,5 +109,15 @@ public class AgendamentoService {
         r.setStartTime(ag.getStartTime());
         r.setEndTime(ag.getEndTime());
         return r;
+    }
+
+    public List<AgendamentoResponse> listarAgendaDoDia(LocalDate date, Long barberId) {
+        var from = date.atStartOfDay();
+        var to = date.plusDays(1).atStartOfDay();
+
+        return agendamentoRepository.findAgendaDoDia(from, to, barberId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 }
