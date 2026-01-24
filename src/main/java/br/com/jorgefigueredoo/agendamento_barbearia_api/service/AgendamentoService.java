@@ -24,8 +24,8 @@ public class AgendamentoService {
     private final BarberRepository barberRepository;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
-            ServiceRepository serviceRepository,
-            BarberRepository barberRepository) {
+                              ServiceRepository serviceRepository,
+                              BarberRepository barberRepository) {
         this.agendamentoRepository = agendamentoRepository;
         this.serviceRepository = serviceRepository;
         this.barberRepository = barberRepository;
@@ -46,7 +46,8 @@ public class AgendamentoService {
                 barbeiro.getId(),
                 start,
                 end,
-                List.of(StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO));
+                List.of(StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO)
+        );
 
         if (conflito) {
             throw new RuntimeException("Horário indisponível para esse barbeiro");
@@ -90,6 +91,58 @@ public class AgendamentoService {
         return toResponse(ag);
     }
 
+    public List<AgendamentoResponse> listarAgendaDoDia(LocalDate date, Long barberId) {
+        LocalDateTime from = date.atStartOfDay();
+        LocalDateTime to = date.plusDays(1).atStartOfDay();
+
+        return agendamentoRepository.findAgendaDoDia(from, to, barberId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
+     * range:
+     * - today  -> só hoje
+     * - 7d     -> próximos 7 dias (inclui o 7º dia inteiro)
+     * - 30d    -> próximos 30 dias (inclui o 30º dia inteiro)
+     * - all    -> todos
+     */
+    public List<AgendamentoResponse> listarPorRange(String range, Long barberId) {
+        if (range == null || range.isBlank()) range = "today";
+
+        if (range.equalsIgnoreCase("all")) {
+            return agendamentoRepository.findAllByOrderByStartTimeAsc()
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime from = today.atStartOfDay();
+        LocalDateTime to;
+
+        switch (range.toLowerCase()) {
+            case "7d":
+                to = today.plusDays(7).plusDays(1).atStartOfDay();
+                break;
+
+            case "30d":
+                to = today.plusDays(30).plusDays(1).atStartOfDay();
+                break;
+
+            case "today":
+            default:
+                to = today.plusDays(1).atStartOfDay();
+                break;
+        }
+
+        return agendamentoRepository.findByRange(from, to, barberId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private AgendamentoResponse toResponse(Appointment ag) {
         AgendamentoResponse r = new AgendamentoResponse();
         r.setId(ag.getId());
@@ -109,15 +162,5 @@ public class AgendamentoService {
         r.setStartTime(ag.getStartTime());
         r.setEndTime(ag.getEndTime());
         return r;
-    }
-
-    public List<AgendamentoResponse> listarAgendaDoDia(LocalDate date, Long barberId) {
-        var from = date.atStartOfDay();
-        var to = date.plusDays(1).atStartOfDay();
-
-        return agendamentoRepository.findAgendaDoDia(from, to, barberId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
     }
 }
