@@ -42,6 +42,7 @@ public class SecurityConfig {
                         // admin
                         .requestMatchers("/admin/servicos/**").hasRole("ADMIN")
                         .requestMatchers("/admin/agendamentos/**").hasAnyRole("ADMIN", "BARBEIRO")
+                        .requestMatchers("/admin/horarios/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
