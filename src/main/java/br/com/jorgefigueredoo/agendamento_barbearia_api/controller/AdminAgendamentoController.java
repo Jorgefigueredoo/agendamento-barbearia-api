@@ -18,16 +18,6 @@ public class AdminAgendamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    // Ex: /admin/agendamentos?date=2026-01-21
-    // ou /admin/agendamentos?date=2026-01-21&barberId=1
-    @GetMapping
-    public List<AgendamentoResponse> agendaDoDia(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam(required = false) Long barberId
-    ) {
-        return agendamentoService.listarAgendaDoDia(date, barberId);
-    }
-
     @PatchMapping("/{id}/confirmar")
     public AgendamentoResponse confirmar(@PathVariable Long id) {
         return agendamentoService.confirmar(id);
@@ -37,4 +27,24 @@ public class AdminAgendamentoController {
     public AgendamentoResponse cancelar(@PathVariable Long id) {
         return agendamentoService.cancelar(id);
     }
+
+    @GetMapping
+    public List<AgendamentoResponse> listar(
+            @RequestParam(required = false) String range,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) Long barberId) {
+        // prioridade: se vier range, usa range
+        if (range != null && !range.isBlank()) {
+            return agendamentoService.listarPorRange(range, barberId);
+        }
+
+        // se não vier range, mas vier date, usa o dia específico
+        if (date != null) {
+            return agendamentoService.listarAgendaDoDia(date, barberId);
+        }
+
+        // default: hoje
+        return agendamentoService.listarPorRange("today", barberId);
+    }
+
 }
